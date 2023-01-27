@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "*.inc": "arm",
+        "*.850": "arm",
+        "*.ld": "arm",
+        "*.scat": "arm",
+        "*.sct": "arm",
+        "*.map": "arm",
+        "clcd.h": "c"
+    }
+}

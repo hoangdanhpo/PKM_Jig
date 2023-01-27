@@ -1,0 +1,10 @@
+pkm_jig\gp_drive.o: ..\App_lib\Src\gp_drive.c
+pkm_jig\gp_drive.o: C:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.3.0\Device\Include\stm32f10x.h
+pkm_jig\gp_drive.o: .\RTE\_PKM_JIG\RTE_Components.h
+pkm_jig\gp_drive.o: ../Drivers/CMSIS/Include/core_cm3.h
+pkm_jig\gp_drive.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+pkm_jig\gp_drive.o: ../Drivers/CMSIS/Include/cmsis_version.h
+pkm_jig\gp_drive.o: ../Drivers/CMSIS/Include/cmsis_compiler.h
+pkm_jig\gp_drive.o: ../Drivers/CMSIS/Include/cmsis_armcc.h
+pkm_jig\gp_drive.o: C:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.3.0\Device\Include\system_stm32f10x.h
+pkm_jig\gp_drive.o: ..\App_lib\Inc\gp_drive.h
