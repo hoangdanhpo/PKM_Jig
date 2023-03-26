@@ -20,7 +20,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usb_device.h"
-
+#include "usbd_cdc_if.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "CLCD.h"
@@ -47,20 +47,30 @@ TIM_HandleTypeDef htim3;
 /* USER CODE BEGIN PV */
 CLCD_Name     LCD1;                 /* Create LCD*/
 SETTING_STATE enl_setting_state;    /* System state: SETTING or RUNNING */
+
+/* Postion of option on LCD (x,y)*/
 uint8_t u1l_LCD_pos_Vol[3][2] =
 {
   { 1U, 1U},
   { 1U, 2U},
   { 1U, 3U}
-}; /* Postion of option on LCD (x,y)*/
+};
+
+/* Postion of option on LCD (x,y)*/
 uint8_t u1l_LCD_pos_Sig[4][2] =
 {
   { 1U, 1U},
   { 1U, 2U},
   { 9U, 1U},
   { 9U, 2U}
-}; /* Postion of option on LCD (x,y)*/
+};
+
 uint8_t u1l_LCD_pos_cur;
+
+SETTING_APP Is_App_Connect;
+APP_VOLTAGE App_Voltage;
+APP_SIGNAL App_Signal;
+uint8_t Is_app_status;
 
 /* USER CODE END PV */
 
@@ -83,42 +93,75 @@ void f_active_ST(void);
 void f_active_BLE(void);
 void f_active_UWB(void);
 void f_sw_signal_not_use(void);
+uint8_t f_display_app(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+/* Handle Rx from Tx App */
 void USBRxHandler(uint8_t* buf, uint32_t len)
 {
-	if (strncmp(buf,"0",len) == 0)
-	{
-		f_voltage_0V();
-	}
-	if (strncmp(buf,"1",len) == 0)
-	{
-		f_voltage_12V();
-	}
-	else if (strncmp(buf,"2",len) == 0)
-	{
-		f_voltage_24V();
-	}
-	else if (strncmp(buf,"3",len) == 0)
-	{
-		f_active_ST();
-	}
-	else if (strncmp(buf,"4",len) == 0)
-	{
-		f_active_BLE();
-	}
-	else if (strncmp(buf,"5",len) == 0)
-	{
-		f_active_UWB();
-	}
-	else if (strncmp(buf,"6",len) == 0)
-	{
-		f_sw_signal_not_use();
-	}
+  /* Button connect */
+  if (strncmp(buf,"c",len) == 0)
+  {
+    Is_App_Connect = CON_APP;
+    Is_app_status = E_NOT_OK;
+  }
 
-	return;
+  /* Button disconnect */
+  if (strncmp(buf,"d",len) == 0)
+  {
+    Is_App_Connect = DIS_APP;
+    enl_setting_state = EN_DEFAULT;
+  }
+
+  /* After app connect */
+  if ( Is_App_Connect == CON_APP )
+  {
+    /* Select Voltage: 0V */
+    if (strncmp(buf,"1",len) == 0)
+    {
+      App_Voltage = EN_0V;
+    }
+
+    /* Select Voltage: 12V */
+    if (strncmp(buf,"2",len) == 0)
+    {
+      App_Voltage = EN_12V;
+    }
+
+    /* Select Voltage: 24V */
+    if (strncmp(buf,"3",len) == 0)
+    {
+      App_Voltage = EN_24V;
+    }
+
+    /* Signal: ST uC */
+    if (strncmp(buf,"4",len) == 0)
+    {
+      App_Signal = EN_ST;
+    }
+
+    /* Signal: BLE */
+    if (strncmp(buf,"5",len) == 0)
+    {
+      App_Signal = EN_BLE;
+
+    }
+
+    /* Signal: UWB */
+    if (strncmp(buf,"6",len) == 0)
+    {
+      App_Signal = EN_UWB;
+    }
+
+    /* Signal: Not use */
+    if (strncmp(buf,"7",len) == 0)
+    {
+      App_Signal = EN_NOT_USE;
+    }
+  }
+  return;
 }
 /* USER CODE END 0 */
 
@@ -165,122 +208,241 @@ int main(void)
                   LCD_D4_GPIO_Port, LCD_D4_Pin, LCD_D5_GPIO_Port, LCD_D5_Pin,
                   LCD_D6_GPIO_Port, LCD_D6_Pin, LCD_D7_GPIO_Port, LCD_D7_Pin);
 
-  /* Init setting for system*/
+  /* Init setting for system */
   enl_setting_state = EN_VOLTAGE;
+  Is_App_Connect = DIS_APP;
   u1l_LCD_pos_cur = 0U;
+  Is_app_status = E_NOT_OK;
+  App_Voltage = EN_VOL_DEFAULT;
+  App_Signal = EN_SIG_DEFAULT;
+
   f_display_voltage();
   f_voltage_0V();
   f_deactive_sw();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-          //CDC_Transmit_FS(myString1,strlen((const char*)myString1));
-          switch (enl_setting_state)
+    /* Disconnect JIG App */
+    if ( Is_App_Connect == DIS_APP )
+    {
+      switch (enl_setting_state)
+      {
+        /* State Voltage*/
+        case EN_VOLTAGE:
+          /* Select voltage by BTN3 */
+          if (HAL_GPIO_ReadPin(BTN3_GPIO_Port, BTN3_Pin) == 0)
           {
-          case EN_VOLTAGE:
+              HAL_Delay(5);
+              if( HAL_GPIO_ReadPin(BTN3_GPIO_Port, BTN3_Pin) == 0)
+              {
+                  /* Control pointer select voltage option */
+                  u1l_LCD_pos_cur++;
+                  if (u1l_LCD_pos_cur > 2)
+                  {
+                    u1l_LCD_pos_cur = 0;
+                  }
+                  else
+                  {
+                    /* do nothing */
+                  }
+                  f_pos_lcd(u1l_LCD_pos_Vol, u1l_LCD_pos_cur);
 
-            if (HAL_GPIO_ReadPin(BTN3_GPIO_Port, BTN3_Pin) == 0)
-            {
-                HAL_Delay(5);
-                if( HAL_GPIO_ReadPin(BTN3_GPIO_Port, BTN3_Pin) == 0)
-                {
-                    u1l_LCD_pos_cur++;
-                    if (u1l_LCD_pos_cur > 2)
-                    {
-                      u1l_LCD_pos_cur = 0;
-                    }
-                    else
-                    {
-                      /* do nothing */
-                    }
-                    f_pos_lcd(u1l_LCD_pos_Vol, u1l_LCD_pos_cur);
-                    switch (u1l_LCD_pos_cur)
-                    {
-                      case 0:
-                        f_voltage_0V();
-                        break;
-                      case 1:
-                        f_voltage_12V();
-                        break;
-                      case 2:
-                        f_voltage_24V();
-                        break;
-                    }
-                    while(HAL_GPIO_ReadPin(BTN3_GPIO_Port, BTN3_Pin) == 0);
-                }
-            }
-            if (HAL_GPIO_ReadPin(BTN2_GPIO_Port, BTN2_Pin) == 0)
-            {
-                HAL_Delay(5);
-                if( HAL_GPIO_ReadPin(BTN2_GPIO_Port, BTN2_Pin) == 0)
-                {
-                    enl_setting_state = EN_SWITCH_SIGNAL;
-                    u1l_LCD_pos_cur = 0U;
-                    f_active_sw();
-                    CLCD_Clear(&LCD1);
-                    f_display_sw_signal();
-                    while(HAL_GPIO_ReadPin(BTN2_GPIO_Port, BTN2_Pin) == 0);
-                }
-            }
-						break;
+                  /* Handle function of voltage */
+                  switch (u1l_LCD_pos_cur)
+                  {
+                    case 0:
+                      f_voltage_0V();
+                      break;
+                    case 1:
+                      f_voltage_12V();
+                      break;
+                    case 2:
+                      f_voltage_24V();
+                      break;
+                  }
+                  while(HAL_GPIO_ReadPin(BTN3_GPIO_Port, BTN3_Pin) == 0);
+              }
+          }
 
-          case EN_SWITCH_SIGNAL:
+          /* Switch from Voltage to Signal */
+          if (HAL_GPIO_ReadPin(BTN2_GPIO_Port, BTN2_Pin) == 0)
+          {
+              HAL_Delay(5);
+              if( HAL_GPIO_ReadPin(BTN2_GPIO_Port, BTN2_Pin) == 0)
+              {
+                  /* Clear display and switch signal state */
+                  u1l_LCD_pos_cur = 0U;
+                  f_active_sw();
+                  CLCD_Clear(&LCD1);
+                  f_display_sw_signal();
+                  enl_setting_state = EN_SWITCH_SIGNAL;
+                  while(HAL_GPIO_ReadPin(BTN2_GPIO_Port, BTN2_Pin) == 0);
+              }
+          }
+        break;
 
-            if (HAL_GPIO_ReadPin(BTN3_GPIO_Port, BTN3_Pin) == 0)
-            {
-                HAL_Delay(5);
-                if( HAL_GPIO_ReadPin(BTN3_GPIO_Port, BTN3_Pin) == 0)
-                {
-                    u1l_LCD_pos_cur++;
-                    if (u1l_LCD_pos_cur > 3)
-                    {
-                      u1l_LCD_pos_cur = 0;
-                    }
-                    else
-                    {
-                      /* do nothing */
-                    }
-                    f_pos_lcd(u1l_LCD_pos_Sig, u1l_LCD_pos_cur);
-                    switch (u1l_LCD_pos_cur)
-                    {
-                      case 0:
-                        f_active_ST();
-                        break;
-                      case 1:
-                        f_active_BLE();
-                        break;
-                      case 2:
-                        f_active_UWB();
-                        break;
-                      case 3:
-                        f_sw_signal_not_use();
-                        break;
-                    }
-                    while(HAL_GPIO_ReadPin(BTN3_GPIO_Port, BTN3_Pin) == 0);
-                }
-            }
-            if (HAL_GPIO_ReadPin(BTN2_GPIO_Port, BTN2_Pin) == 0)
-            {
-                HAL_Delay(5);
-                if( HAL_GPIO_ReadPin(BTN2_GPIO_Port, BTN2_Pin) == 0)
-                {
-                    enl_setting_state = EN_VOLTAGE;
-                    u1l_LCD_pos_cur = 0U;
-										f_voltage_0V();
-                    f_deactive_sw();
-                    CLCD_Clear(&LCD1);
-                    f_display_voltage();
-                    while(HAL_GPIO_ReadPin(BTN2_GPIO_Port, BTN2_Pin) == 0);
-                }
-            }
+      /* State Voltage*/
+        case EN_SWITCH_SIGNAL:
+          /* Select signal by BTN3 */
+          if (HAL_GPIO_ReadPin(BTN3_GPIO_Port, BTN3_Pin) == 0)
+          {
+              HAL_Delay(5);
+              if( HAL_GPIO_ReadPin(BTN3_GPIO_Port, BTN3_Pin) == 0)
+              {
+                  u1l_LCD_pos_cur++;
+                  if (u1l_LCD_pos_cur > 3)
+                  {
+                    u1l_LCD_pos_cur = 0;
+                  }
+                  else
+                  {
+                    /* do nothing */
+                  }
+                  f_pos_lcd(u1l_LCD_pos_Sig, u1l_LCD_pos_cur);
+                  switch (u1l_LCD_pos_cur)
+                  {
+                    case 0:
+                      f_active_ST();
+                      break;
+                    case 1:
+                      f_active_BLE();
+                      break;
+                    case 2:
+                      f_active_UWB();
+                      break;
+                    case 3:
+                      f_sw_signal_not_use();
+                      break;
+                  }
+                  while(HAL_GPIO_ReadPin(BTN3_GPIO_Port, BTN3_Pin) == 0);
+              }
+          }
+
+          /* Switch from Signal to Voltage */
+          if (HAL_GPIO_ReadPin(BTN2_GPIO_Port, BTN2_Pin) == 0)
+          {
+              HAL_Delay(5);
+              if( HAL_GPIO_ReadPin(BTN2_GPIO_Port, BTN2_Pin) == 0)
+              {
+                  /* Clear display and switch Voltage state */
+                  enl_setting_state = EN_VOLTAGE;
+                  u1l_LCD_pos_cur = 0U;
+                  f_voltage_0V();
+                  f_deactive_sw();
+                  CLCD_Clear(&LCD1);
+                  f_display_voltage();
+                  while(HAL_GPIO_ReadPin(BTN2_GPIO_Port, BTN2_Pin) == 0);
+              }
+          }
+          break;
+
+        default:
+          /* Handle for switching from APP to Manual */
+          CLCD_Clear(&LCD1);
+          enl_setting_state = EN_VOLTAGE;
+          f_display_voltage();
+          break;
+        }
+    }
+
+    /* Connect JIG App */
+    else
+    {
+      /* Prepare for app control and display information app on LCD */
+      if ( Is_app_status == E_NOT_OK )
+      {
+        Is_app_status = f_display_app();
+        f_voltage_0V();
+        f_deactive_sw();
+      }
+      else
+      {
+        switch ( App_Voltage )
+        {
+            case EN_0V:
+              f_voltage_0V();
+              CLCD_SetCursor(&LCD1, 9, 1);
+              CLCD_WriteString(&LCD1,"   ");
+              CLCD_SetCursor(&LCD1, 9, 1);
+              CLCD_WriteString(&LCD1,"0V");
+              App_Voltage = EN_VOL_DEFAULT;
+              break;
+
+            case EN_12V:
+              f_voltage_12V();
+              CLCD_SetCursor(&LCD1, 9, 1);
+              CLCD_WriteString(&LCD1,"   ");
+              CLCD_SetCursor(&LCD1, 9, 1);
+              CLCD_WriteString(&LCD1,"12V");
+              App_Voltage = EN_VOL_DEFAULT;
+              break;
+
+            case EN_24V:
+              f_voltage_24V();
+              CLCD_SetCursor(&LCD1, 9, 1);
+              CLCD_WriteString(&LCD1,"   ");
+              CLCD_SetCursor(&LCD1, 9, 1);
+              CLCD_WriteString(&LCD1,"24V");
+              App_Voltage = EN_VOL_DEFAULT;
+              break;
+
+            default:
+              /*do nothing */
+              break;
+        }
+
+        switch ( App_Signal )
+        {
+          case EN_ST:
+            f_active_ST();
+            CLCD_SetCursor(&LCD1, 9, 2);
+            CLCD_WriteString(&LCD1,"       ");
+            CLCD_SetCursor(&LCD1, 9, 2);
+            CLCD_WriteString(&LCD1,"ST uC");
+            App_Signal = EN_SIG_DEFAULT;
+            break;
+
+          case EN_BLE:
+            f_active_BLE();
+            CLCD_SetCursor(&LCD1, 9, 2);
+            CLCD_WriteString(&LCD1,"       ");
+            CLCD_SetCursor(&LCD1, 9, 2);
+            CLCD_WriteString(&LCD1,"BLE");
+            App_Signal = EN_SIG_DEFAULT;
+            break;
+
+          case EN_UWB:
+            f_active_UWB();
+
+            CLCD_SetCursor(&LCD1, 9, 2);
+            CLCD_WriteString(&LCD1,"       ");
+            CLCD_SetCursor(&LCD1, 9, 2);
+            CLCD_WriteString(&LCD1,"UWB");
+
+            App_Signal = EN_SIG_DEFAULT;
+            break;
+
+          case EN_NOT_USE:
+            f_sw_signal_not_use();
+
+            CLCD_SetCursor(&LCD1, 9, 2);
+            CLCD_WriteString(&LCD1,"       ");
+            CLCD_SetCursor(&LCD1, 9, 2);
+            CLCD_WriteString(&LCD1,"NOT USE");
+
+            App_Signal = EN_SIG_DEFAULT;
             break;
 
           default:
+            /*do nothing */
             break;
-          }
+        }
+      }
+    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -439,7 +601,7 @@ void f_display_voltage(void)
   CLCD_WriteString(&LCD1,"0V");
   CLCD_SetCursor(&LCD1, 3, 2);
   CLCD_WriteString(&LCD1,"12V");
-	CLCD_SetCursor(&LCD1, 3, 3);
+  CLCD_SetCursor(&LCD1, 3, 3);
   CLCD_WriteString(&LCD1,"24V");
   f_pos_lcd(u1l_LCD_pos_Vol, 0);
 }
@@ -456,6 +618,23 @@ void f_display_sw_signal(void)
   CLCD_SetCursor(&LCD1, 11, 2);
   CLCD_WriteString(&LCD1,"Not use");
   f_pos_lcd(u1l_LCD_pos_Sig, 0);
+}
+
+uint8_t f_display_app(void)
+{
+  uint8_t ret;
+
+  CLCD_Clear(&LCD1);
+
+  CLCD_SetCursor(&LCD1, 0, 0);
+  CLCD_WriteString(&LCD1,"Connected JIG App");
+  CLCD_SetCursor(&LCD1, 0, 1);
+  CLCD_WriteString(&LCD1,"Voltage: ");
+  CLCD_SetCursor(&LCD1, 0, 2);
+  CLCD_WriteString(&LCD1,"Signal : ");
+
+  ret = E_OK;
+  return ret;
 }
 
 void f_clr_pos_lcd(uint8_t u1l_LCD_pos[][2])
