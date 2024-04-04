@@ -3,7 +3,7 @@
 <title>Static Call Graph - [PKM_JIG\PKM_JIG.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image PKM_JIG\PKM_JIG.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6190004: Last Updated: Thu Apr  4 11:53:00 2024
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6190004: Last Updated: Thu Apr  4 15:39:18 2024
 <BR><P>
 <H3>Maximum Stack Usage =        240 bytes + Unknown(Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -1230,15 +1230,15 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[4a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[4a]"></a>main</STRONG> (Thumb, 1928 bytes, Stack size 88 bytes, main.o(.text.main))
+<P><STRONG><a name="[4a]"></a>main</STRONG> (Thumb, 2492 bytes, Stack size 88 bytes, main.o(.text.main))
 <BR><BR>[Stack]<UL><LI>Max Depth = 240<LI>Call Chain = main &rArr; SystemClock_Config &rArr; HAL_RCC_ClockConfig &rArr; HAL_InitTick &rArr; HAL_NVIC_SetPriority
 </UL>
 <BR>[Calls]<UL><LI><a href="#[c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;f_display_sw_signal
-<LI><a href="#[58]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_Delay
 <LI><a href="#[c6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GPIO_ReadPin
 <LI><a href="#[5e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;CLCD_WriteString
 <LI><a href="#[5c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;CLCD_SetCursor
 <LI><a href="#[5a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;CLCD_Clear
+<LI><a href="#[58]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_Delay
 <LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;f_display_voltage
 <LI><a href="#[57]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;CLCD_4BIT_Init
 <LI><a href="#[c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_TIM_PWM_Start

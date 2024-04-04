@@ -361,6 +361,7 @@ int main(void)
       }
       else
       {
+				f_active_sw();
         switch ( App_Voltage )
         {
             case EN_0V:
@@ -552,11 +553,17 @@ static void MX_TIM3_Init(void)
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
+/* USER CODE BEGIN MX_GPIO_Init_1 */
+/* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, LCD_LED_Pin|LCD_D7_Pin|LCD_D6_Pin|LCD_D5_Pin
@@ -564,7 +571,14 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, LCD_RS_Pin|JTAG_EN_n_Pin|JTAG_S0_Pin|JTAG_S1_Pin
-                          |EN_12V_n_Pin|EN_24V_n_Pin, GPIO_PIN_RESET);
+                          |EN_24V_n_Pin|EN_12V_n_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : PC14 PC15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_14|GPIO_PIN_15;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LCD_LED_Pin LCD_D7_Pin LCD_D6_Pin LCD_D5_Pin
                            LCD_D4_Pin LCD_EN_Pin */
@@ -576,9 +590,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LCD_RS_Pin JTAG_EN_n_Pin JTAG_S0_Pin JTAG_S1_Pin
-                           EN_12V_n_Pin EN_24V_n_Pin */
+                           EN_24V_n_Pin EN_12V_n_Pin */
   GPIO_InitStruct.Pin = LCD_RS_Pin|JTAG_EN_n_Pin|JTAG_S0_Pin|JTAG_S1_Pin
-                          |EN_12V_n_Pin|EN_24V_n_Pin;
+                          |EN_24V_n_Pin|EN_12V_n_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -590,6 +604,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+/* USER CODE BEGIN MX_GPIO_Init_2 */
+/* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
@@ -612,9 +628,9 @@ void f_display_sw_signal(void)
   CLCD_SetCursor(&LCD1, 3, 1);
   CLCD_WriteString(&LCD1,"ST uC");
   CLCD_SetCursor(&LCD1, 11, 1);
-  CLCD_WriteString(&LCD1,"BLE");
-  CLCD_SetCursor(&LCD1, 3, 2);
   CLCD_WriteString(&LCD1,"UWB");
+  CLCD_SetCursor(&LCD1, 3, 2);
+  CLCD_WriteString(&LCD1,"BLE");
   CLCD_SetCursor(&LCD1, 11, 2);
   CLCD_WriteString(&LCD1,"Not use");
   f_pos_lcd(u1l_LCD_pos_Sig, 0);
@@ -664,18 +680,32 @@ void f_pos_lcd(uint8_t u1l_LCD_pos[][2],uint8_t row)
 
 void f_voltage_0V(void)
 {
+		HAL_GPIO_WritePin (GPIOC, GPIO_PIN_14, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin (GPIOC, GPIO_PIN_15, GPIO_PIN_RESET);
+		HAL_Delay(1000);
     HAL_GPIO_WritePin(EN_12V_n_GPIO_Port, EN_12V_n_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(EN_24V_n_GPIO_Port, EN_24V_n_Pin, GPIO_PIN_RESET);
+		HAL_Delay(5000);
 }
 
 void f_voltage_12V(void)
 {
+		HAL_GPIO_WritePin (GPIOC, GPIO_PIN_14, GPIO_PIN_RESET); /* PIN RL 24 */
+		HAL_Delay(1000);
+		HAL_GPIO_WritePin (GPIOC, GPIO_PIN_15, GPIO_PIN_SET);		/* PIN RL 12 */
+		HAL_Delay(1000);
+	
     HAL_GPIO_WritePin(EN_12V_n_GPIO_Port, EN_12V_n_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(EN_24V_n_GPIO_Port, EN_24V_n_Pin, GPIO_PIN_RESET);
 }
 
 void f_voltage_24V(void)
 {
+		HAL_GPIO_WritePin (GPIOC, GPIO_PIN_15, GPIO_PIN_RESET); /* PIN RL 12 */
+		HAL_Delay(1000);
+		HAL_GPIO_WritePin (GPIOC, GPIO_PIN_14, GPIO_PIN_SET);		/* PIN RL 24 */
+		HAL_Delay(1000);
+	
     HAL_GPIO_WritePin(EN_12V_n_GPIO_Port, EN_12V_n_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(EN_24V_n_GPIO_Port, EN_24V_n_Pin, GPIO_PIN_SET);
 }
